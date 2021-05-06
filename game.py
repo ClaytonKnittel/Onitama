@@ -210,9 +210,11 @@ class onitama:
 		row, col = to_coord(piece_idx)
 		if self.turn_color() == colors.RED:
 			tile = self.red_tiles[tile_idx]
+			dc, dr = tile['moves'][move_idx]
 		else:
 			tile = self.blue_tiles[tile_idx]
-		dc, dr = tile['moves'][move_idx]
+			dc, dr = tile['moves'][move_idx]
+			dc, dr = -dc, -dr
 		# make sure the move is in bounds
 		assert(0 <= row + dr < BOARD_HEIGHT)
 		assert(0 <= col + dc < BOARD_WIDTH)
@@ -242,6 +244,9 @@ class onitama:
 				moves = tiles[tile_idx]['moves']
 				for move_idx in range(len(moves)):
 					dc, dr = moves[move_idx]
+					if self.turn_color() == colors.BLUE:
+						# rotate 180
+						dc, dr = -dc, -dr
 					r = row + dr
 					c = col + dc
 					if 0 <= r < BOARD_HEIGHT and 0 <= c < BOARD_WIDTH and piece_color(self.board[to_idx(r, c)]) != self.turn_color():
@@ -289,7 +294,7 @@ class HumanAgent(Agent):
 			if m == 'quit' or m == 'q' or m == 'exit':
 				exit(1)
 
-			exp = re.compile(r"([a-zA-Z]+) \(([0-9]+),[\s]*([0-9]+)\) \(([0-9]+),[\s]*([0-9]+)\)")
+			exp = re.compile(r"([a-zA-Z]+) \(?([0-9]+)[,\s][\s]*([0-9]+)\)? \(?([0-9]+)[,\s][\s]*([0-9]+)\)?")
 			mat = exp.match(m)
 			if not mat:
 				print("invalid input, try again")
@@ -311,6 +316,8 @@ class HumanAgent(Agent):
 				continue
 			c = dc - sc
 			r = dr - sr
+			if game.turn_color() == colors.BLUE:
+				c, r = -c, -r
 			if (c, r) not in tile['moves']:
 				print("Cannot move from (%d, %d) to (%d, %d) using %s" % \
 						(sc + 1, sr + 1, dc + 1, dr + 1, tile_name))
