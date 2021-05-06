@@ -1,4 +1,6 @@
 
+import re
+
 class colors:
 	GRAY = 0
 	RED = 1
@@ -148,6 +150,7 @@ class onitama:
 		# boards are indexed in row-major order, with red being in the first row and blue in the last
 		self.board = [pieces.EMPTY] * (BOARD_WIDTH * BOARD_HEIGHT)
 		self.turn = 0
+		self.blue_starts = 1 if self.middle_tile['go_first'] == colors.BLUE else 0
 
 		# set the pieces
 		for col in range(BOARD_WIDTH):
@@ -160,6 +163,7 @@ class onitama:
 
 
 	def __str__(self):
+		turn = "turn " + str(self.turn + 1) + '\n'
 		row_divider = "+" + "---+" * BOARD_WIDTH + '\n'
 
 		board = row_divider
@@ -172,7 +176,7 @@ class onitama:
 		tiles = redify(self.red_tiles[0]['name']) + " " + redify(self.red_tiles[1]['name']) + " " + \
 				grayfy(self.middle_tile['name']) + " " + \
 				bluefy(self.blue_tiles[0]['name']) + " " + bluefy(self.blue_tiles[1]['name'])
-		return board + tiles
+		return turn + board + tiles
 
 	def describe_move(self, move):
 		piece_idx, tile_idx, move_idx = move
@@ -192,7 +196,7 @@ class onitama:
 
 	# returns the color of the player whose turn it is
 	def turn_color(self):
-		return self.turn % 2 + 1
+		return (self.turn + self.blue_starts) % 2 + 1
 
 	# moves are in the format:
 	#   (piece_idx, tile_idx, move_idx)
@@ -264,6 +268,36 @@ def get_tile(name):
 	return next(tile for tile in TILES if tile["name"] == name)
 
 
+class Agent():
+
+	def get_move(self, game):
+		pass
+
+class HumanAgent(Agent):
+
+	def __init__(self):
+		pass
+
+	# moves should be input as <tile_name> coord_from coord_to
+	# coordinates should be of the form (x, y), where x and y start from 1 at the bottom left corner
+	def get_move(self, game):
+		while True:
+			m = input("%s move: " % (redify("red") if game.turn_color() == colors.RED else bluefy("blue")))
+			if m == 'quit' or m == 'q' or m == 'exit':
+				exit(1)
+
+			exp = re.compile(r"([a-zA-Z]+) \(([0-9]+),[\s]*([0-9]+)\) \(([0-9]+),[\s]*([0-9]+)\)")
+			mat = exp.match(m)
+			if not mat:
+				print("invalid input, try again")
+				continue
+			tile_name = mat.group(1)
+			sc = int(mat.group(2)) - 1
+			sr = int(mat.group(3)) - 1
+			dc = int(mat.group(4)) - 1
+			dr = int(mat.group(5)) - 1
+			print(tile_name, sc, sr, dc, dr)
+
 if __name__ == "__main__":
 	from sys import argv
 	import copy
@@ -273,6 +307,19 @@ if __name__ == "__main__":
 		print("Expect %s <red tiles> <middle tile> <blue tiles>" % argv[0])
 		exit(-1)
 	o = onitama(argv[1:3], argv[3], argv[4:6])
+
+	agents = [HumanAgent(), HumanAgent()]
+
+	while o.get_winner() == colors.GRAY:
+		if o.turn_color() == colors.RED:
+			player = agents[0]
+		else:
+			player = agents[1]
+		move = player.get_move(o)
+		o.describe_move(move)
+		o.move(move)
+		print(o)
+	"""
 	print(o)
 	while o.get_winner() == colors.GRAY:
 		moves = list(o.legal_moves())
@@ -280,4 +327,5 @@ if __name__ == "__main__":
 		o.describe_move(move)
 		o.move(move)
 		print(o)
+	"""
 
