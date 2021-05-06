@@ -264,6 +264,9 @@ class onitama:
 		pass
 
 
+def get_tile_idx(name):
+	return next(idx for idx, tile in enumerate(TILES) if tile["name"] == name)
+
 def get_tile(name):
 	return next(tile for tile in TILES if tile["name"] == name)
 
@@ -297,6 +300,23 @@ class HumanAgent(Agent):
 			dc = int(mat.group(4)) - 1
 			dr = int(mat.group(5)) - 1
 			print(tile_name, sc, sr, dc, dr)
+			try:
+				if game.turn_color() == colors.RED:
+					tiles = game.red_tiles
+				else:
+					tiles = game.blue_tiles
+				tile_idx, tile = next((idx, tile) for idx, tile in enumerate(tiles) if tile["name"] == tile_name)
+			except Exception:
+				print("No such tile \"%s\"" % tile_name)
+				continue
+			c = dc - sc
+			r = dr - sr
+			if (c, r) not in tile['moves']:
+				print("Cannot move from (%d, %d) to (%d, %d) using %s" % \
+						(sc + 1, sr + 1, dc + 1, dr + 1, tile_name))
+				continue
+			move_idx = tile['moves'].index((c, r))
+			return (to_idx(sr, sc), tile_idx, move_idx)
 
 if __name__ == "__main__":
 	from sys import argv
@@ -310,6 +330,7 @@ if __name__ == "__main__":
 
 	agents = [HumanAgent(), HumanAgent()]
 
+	print(o)
 	while o.get_winner() == colors.GRAY:
 		if o.turn_color() == colors.RED:
 			player = agents[0]
